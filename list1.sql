@@ -118,20 +118,74 @@ CPF do procedimento, o CPF do antigo chefe. Feito isso, crie um bloco que faça 
 empregado de CPF 7777 torne-se o novo chefe do departamento 1, o antigo chefe do departamento
 1 se torne o novo do departmento 2, e o antigo do departamento 2 se torne o novo do
 departamento 3. Use um WHILE LOOP.*/
-
+CREATE OR REPLACE PROCEDURE set_new_boss(dept_code departments.code%ROWTYPE, boss_cpf IN OUT employees.cpf%ROWTYPE) AS
+old_boss_cpf boss_cpf%ROWTYPE;
+BEGIN
+  SELECT d.boss_cpf INTO old_boss_cpf FROM employees
+  WHERE d.code = dept_code;
+  
+  UPDATE departments d SET d.boss_cpf = boss_cpf
+  WHERE d.code = dept_code;
+  
+  boss_cpf = old_boss_cpf;
+END set_new_boss;
+  
+DECLARE 
+  dept_old_boss departments.boss_cpf%ROWTYPE;
+  i INTEGER;
+BEGIN
+  i = 1;
+  dept_old_boss = 7777;
+  WHILE (i < 4) LOOP
+  set_new_boss(i, dept_old_boss);
+  i = i + 1;
+ END LOOP;
+END;
 
 /*Questão 13
 Crie um trigger que, após inserir ou deletar empregados, imprima na tela a nova quantidade de
 empregados da tabela. Isso só precisa ser feito uma vez por comando, mesmo que mais de uma
 linha tenha sido inserida ou deletada.*/
+CREATE OR REPLACE TRIGGER new_empl_qt AFTER INSERT OR DELETE ON employees
+DECLARE
+  new_qt INTEGER;
+BEGIN
+  SELECT count(e.cpf) INTO new_qt FROM employees;
+  dbms_output.put_line(to_char(new_qt));
+END new_empl_qt;
 
 /*Questão 14
 Selecione o NOME dos empregados que são técnicos e cuidam da parte de desenvolvimento de um
 projeto, que não tem valor maior que 8000. (UTILIZE OPERAÇÕES DE CONJUNTOS)*/
+SELECT name FROM employees
+WHERE study_level = 'Technician'
+
+  INTERSECT
+
+SELECT name FROM employees e, projects p
+WHERE e.cpf = p.cpf AND p.assignment = 'Development'
+
+  INTERSECT
+
+SELECT name FROM employees e, projects p
+  WHERE project_value <= 8000;
 
 /*Questão 15
 Crie um cursor que imprima na tela os nomes dos empregados que tem como líder, o empregado de
 CPF = 1111, e que tenham salário superior a 3.500,00.*/
+DECLARE
+  CURSOR print_employees IS SELECT e.name FROM employees e
+  WHERE e.leader = 1111 AND e.wage > 3500;
+
+  aux_cur print_employees%ROWTYPE;
+BEGIN
+  OPEN print_employees;
+  LOOP FETCH print_employees INTO aux_cur;
+  EXIT WHEN print_employees%NOTFOUND;
+  dbms_output.put_line(aux_cur.name);
+  END LOOP;
+  CLOSE print_employees;
+END;
 
 /*Questão 16
 Crie um trigger que não permita a inserção (ou atualização) de projetos com valores acima de
@@ -155,7 +209,7 @@ Liste qual gratificação, cada empregado do departamento de Vendas recebeu. (UT
 /*Questão 21
 Liste quantos empregados graduados de cada IES receberam gratificação.*/
 
-/*Questão 22
+/*Questão 22 -----------------------------------------------------------------------------------------> FAZER
 Crie um PACKAGE composto de:
 Uma função que recebe o código de um Projeto e retorna os dados dele;
 Um procedimento que receba os dados de um Projeto e imprima na tela a sua descrição;*/
@@ -173,7 +227,7 @@ Crie um TRIGGER para inserção, que atualize o valor do salário de um empregad
 ao salário do empregado), todas as vezes que um empregado se envolver em um novo projeto.*/
 
 /*
-Questão 26
+Questão 26 -----------------------------------------------------------------------------------------> FAZER
 Precisamos dividir todos os empregados em 2 grupos, para isso decidimos que vamos dividir pelo
 numero do CPF, para isso, crie um procedimento que diga se os CPFs são impar ou par, para que
 eles sejam divididos no grupo do CPF impar e o grupo do CPF par.*/
