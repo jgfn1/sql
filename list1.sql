@@ -209,11 +209,31 @@ Liste qual gratificação, cada empregado do departamento de Vendas recebeu. (UT
 /*Questão 21
 Liste quantos empregados graduados de cada IES receberam gratificação.*/
 
-/*Questão 22 -----------------------------------------------------------------------------------------> FAZER
+/*Questão 22
 Crie um PACKAGE composto de:
 Uma função que recebe o código de um Projeto e retorna os dados dele;
 Um procedimento que receba os dados de um Projeto e imprima na tela a sua descrição;*/
+CREATE OR REPLACE PACKAGE the_package AS
+DECLARE
+  FUNCTION project_data(project_code projects.project_code%ROWTYPE) RETURN projects.name%ROWTYPE;
+  PROCEDURE print_project_data(code projects.project_code%ROWTYPE, name projects.project_name%ROWTYPE, start_date projects.project_start_date%ROWTYPE);
+END the_package;
 
+CREATE OR REPLACE PACKAGE BODY the_package AS
+DECLARE
+  FUNCTION project_data(project_code IN projects.project_code%ROWTYPE, start_date OUT projects.project_start_date%ROWTYPE,
+    name OUT projects.project_name%ROWTYPE) RETURN projects.name%ROWTYPE IS
+    BEGIN
+      SELECT project_name, project_start_date INTO name, start_date FROM projects p
+        WHERE p.code = project_code;
+      RETURN name;
+    END project_data;
+
+  PROCEDURE print_project_data(code projects.project_code%ROWTYPE, name projects.project_name%ROWTYPE, start_date projects.project_start_date%ROWTYPE) IS
+    BEGIN
+          dbms_output.put_line('The ' || to_char(name) || 'has the code ' || to_char(code) || 'and started at ' || to_char(start_date) || '.');
+    END print_project_data;
+END the_package;
 /*Questão 23
 Crie um TRIGGER que, após inserir empregados, imprima na tela quantos funcionários do sexo
 masculino existem.*/
@@ -231,3 +251,13 @@ Questão 26 --------------------------------------------------------------------
 Precisamos dividir todos os empregados em 2 grupos, para isso decidimos que vamos dividir pelo
 numero do CPF, para isso, crie um procedimento que diga se os CPFs são impar ou par, para que
 eles sejam divididos no grupo do CPF impar e o grupo do CPF par.*/
+CREATE OR REPLACE PROCEDURE odd_even_cpf_split(cpf employees.cpf%ROWTYPE) AS
+BEGIN
+      FOR i IN (SELECT cpf FROM employees) LOOP
+        IF (mod(i.cpf, 2) = 0) THEN
+          INSERT INTO TABLE (even_cpf) VALUES (i.cpf);
+        ELSE
+          INSERT INTO TABLE (odd_cpf) VALUES (i.cpf);
+        END IF;
+      END LOOP;
+END odd_even_cpf_split;
