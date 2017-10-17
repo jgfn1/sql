@@ -48,28 +48,68 @@ ORDER BY e.birthdate;
 
 /*Questão 7
 Insira, remova ou atualize linhas em tabelas do banco de modo a refletir as seguintes situações:
-a) Todos os empregados do departamento de Vendas, perderam seus direitos a gratificações.
-b) Houve um assalto na IES FIFA e todos os empregados com graduação da FIFA, perderam seus
-telefones.*/
+a) Todos os empregados do departamento de Vendas, perderam seus direitos a gratificações.*/
+UPDATE employees e SET e.rewards = NULL
+WHERE exists(
+    SELECT * FROM departments d
+    WHERE d.name = 'Sales' AND e.cpf = d.employee_cpf
+);
 
+/*b) Houve um assalto na IES FIFA e todos os empregados com graduação da FIFA, perderam seus
+telefones.*/
+UPDATE fifa SET phone_number = NULL;
 
 /*Questão 8
 Retorne os CPF's dos empregados que recebem mais do que o salário de qualquer chefe de
 departamento, sem eles mesmos serem chefes, juntamente com os CPF's dos empregados que
 recebem menos do que a média.*/
+SELECT e.cpf FROM employees e
+WHERE (e.wage > ANY (
+  SELECT e1.wage FROM employees e1
+  WHERE e.cpf = e1.boss_cpf) AND NOT exists(
+    SELECT e.cpf FROM employees e2
+    WHERE e.cpf = e2.boss_cpf)) OR (e.wage < (SELECT avg(wage) FROM employees));
 
 /*Questão 9
 Crie um trigger que, se um empregado tenha mais de 60 anos de idade, não permita que o seu
 salário seja menor do que R$ 4000.*/
+CREATE OR REPLACE TRIGGER elder_wage_check BEFORE INSERT OR UPDATE ON employees
+ FOR EACH ROW WHEN (wage < 4000)
+  BEGIN
+    raise_application_error(-20000, 'The elders'' wages cannot be below R$4000,00.');
+  END elder_wage_check;
+
 
 /*Questão 10
 Crie um procedimento que recebe o CPF de um funcionário e imprima na tela o seu nome.
 Adicionalmente, o procedimento deve calcular e retornar a idade do empregado por parâmetro.*/
+CREATE OR REPLACE PROCEDURE name_wage_from_cpf (cpf employees.cpf%ROWTYPE, age OUT INTEGER) AS
+name employees.name%ROWTYPE;
+BEGIN
+  SELECT e.name INTO "name" FROM employees
+    WHERE e.cpf = cpf;
+
+  dbms_output.put_line(name);
+
+  SELECT extract(YEAR FROM (
+    SELECT birthdate FROM employees
+  )) INTO age FROM employees;
+END name_wage_from_cpf;
 
 /*Questão 11
 Crie uma função que receba o código de uma atividade e imprima os CPF's e nomes de todos os
 empregados que participaram dessa atividade. A função deve retornar o número de funcionários
 que participaram da atividade.*/
+CREATE OR REPLACE FUNCTION print_cpf_name_from_activity_return_number(code activity.code%ROWTYPE, employees_number_in_activity OUT INTEGER)
+RETURN employees_number_in_activity%ROWTYPE AS
+  cpf employees.cpf%ROWTYPE;
+  name employees.name%ROWTYPE;
+BEGIN
+  SELECT e.cpf, e.name, count(e.cpf) INTO cpf, name, employees_number_in_activity FROM employees e, activity a
+    WHERE a.code = code AND e.cpf = a.participant_cpf;
+
+  dbms_output.put_line(name || to_char(cpf));
+END print_cpf_name_from_activity_return_number;
 
 /*Questão 12
 Crie um procedimento que receba o código de um departamento e o CPF de um empregado e
@@ -78,6 +118,7 @@ CPF do procedimento, o CPF do antigo chefe. Feito isso, crie um bloco que faça 
 empregado de CPF 7777 torne-se o novo chefe do departamento 1, o antigo chefe do departamento
 1 se torne o novo do departmento 2, e o antigo do departamento 2 se torne o novo do
 departamento 3. Use um WHILE LOOP.*/
+
 
 /*Questão 13
 Crie um trigger que, após inserir ou deletar empregados, imprima na tela a nova quantidade de
