@@ -1,35 +1,57 @@
 /*Questão 1
 Faça uma consulta que retorne o nome dos empregados que são graduados e têm salário entre R$
 3000 e R$ 4000.*/
+SELECT e.name FROM employees e
+WHERE (wage BETWEEN 3000 AND 400)
+      AND study_level = "Undergraduated";
 
 /*Questão 2
 Seja MIN_SALARIO o menor dos salários e MAX_SALARIO o maior dos salários. Retorne o nome, cpf
 e salário dos empregados que tem o salário entre [MIN_SALARIO + 1000, MAX_SALARIO - 1000].*/
+SELECT e.name, cpf, wage FROM employees e
+WHERE wage BETWEEN (SELECT min(wage) + 1000 FROM employees)
+      AND (SELECT max(wage) - 1000 FROM employees);
 
 /*Questão 3
 Retorne, sem usar junção, o cpf dos graduados, sem repetição, que participam de um projeto com
 valor maior que a média dos valores dos projetos.*/
+SELECT DISTINCT cpf FROM employees e, projects p
+WHERE e.cpf = p.partcipant_cpf
+AND p.project_value > (SELECT avg(project_value) FROM projects);
 
 /*Questão 4
 Exiba o código dos projetos de valor maior que R$8000 que possuam mais empregados do que a
 quantidade de líderes, bem, como a quantidade de empregados envolvidos em cada um desses
 projetos.*/
+SELECT project_code, count(cpf) FROM projects
+WHERE project_value > 8000
+      AND (SELECT count(cpf) FROM projects) > (SELECT count(leader_cpf) FROM projects);
 
 /*Questão 5
 Faça uma consulta que retorne o nome dos empregados técnicos, do sexo feminino, que passaram
 da oitava série e trabalharam no departamento de código 2, entre os anos de 2005 e 2010, sem
 receber gratificações. Não faça junções. Use EXISTS.*/
+SELECT e.name FROM employees e
+WHERE e.sex = "F" AND study_level = "Technician" AND reached_grade > 8
+AND exists(
+  SELECT e.cpf FROM departments d
+  WHERE d.code = 2 AND e.cpf = d.cpf AND (worked_year BETWEEN 2005 AND 2010)
+      AND rewards IS NULL);
 
 /*Questão 6
 Crie uma consulta que retorne os nomes dos empregados e a data de nascimento, cujos nomes
 começam com 'J’, que possuem líderes, e retorne também os nomes dos líderes. Ordene os
 empregados por suas datas de nascimento.*/
+SELECT e.name, e.birthdate, e.leader FROM employees
+WHERE e.name LIKE 'J%' AND e.leader IS NOT NULL
+ORDER BY e.birthdate;
 
 /*Questão 7
 Insira, remova ou atualize linhas em tabelas do banco de modo a refletir as seguintes situações:
 a) Todos os empregados do departamento de Vendas, perderam seus direitos a gratificações.
 b) Houve um assalto na IES FIFA e todos os empregados com graduação da FIFA, perderam seus
 telefones.*/
+
 
 /*Questão 8
 Retorne os CPF's dos empregados que recebem mais do que o salário de qualquer chefe de
